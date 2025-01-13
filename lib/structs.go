@@ -76,4 +76,5 @@ type MouseActivity struct {
 type ActivityPayloadFinal struct {
 	MouseActivity   MouseActivity
 	KeyboardPresses int
+	SnapshotTime    int64
 }

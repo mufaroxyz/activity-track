@@ -1,8 +1,12 @@
 package lib
 
+import "time"
+
 func SaveDataInDb(payload ActivityPayload) {
 	// TODO: implement the logic to process data to more optimized format & save it in db
 	finalData := ActivityPayloadFinal{}
+
+	finalData.SnapshotTime = time.Now().UnixNano()
 
 	if len(payload.CursorPositions) > 2 {
 		for i := 1; i < len(payload.CursorPositions); i++ {
