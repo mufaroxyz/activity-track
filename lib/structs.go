@@ -37,6 +37,11 @@ type MSLLHOOKSTRUCT struct {
 	ExtraInfo uintptr
 }
 
+type MSLLHOOKSTRUCTExtended struct {
+	MSLLHOOKSTRUCT
+	ButtonType int
+}
+
 type HHOOK uintptr
 
 type CursorPosData struct {
@@ -46,6 +51,7 @@ type CursorPosData struct {
 
 type ActivityPayload struct {
 	CursorPositions []CursorPosData
+	MouseClicks     []MSLLHOOKSTRUCT
 }
 
 type ActivityPayloadFinal struct {

@@ -10,18 +10,13 @@ func main() {
 		panic("Failed to initialize WinApi")
 	}
 
-	var getCursorPosAddr = lib.GetProcAddress("GetCursorPos")
-	if getCursorPosAddr == 0 {
-		panic("Failed to get GetCursorPos address")
-	}
-
-	println("GetCursorPos addr: ", getCursorPosAddr)
-
 	var activityPayload = lib.ActivityPayload{}
 
 	var lastMousePos = lib.POINT{}
 	mousePosChannel := make(chan lib.CursorPosData)
+	mouseClickChannel := make(chan lib.MSLLHOOKSTRUCT, 5)
 	go lib.MousePosTrack(mousePosChannel)
+	go lib.MouseClickTrack(mouseClickChannel)
 
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -40,6 +35,8 @@ func main() {
 			}
 
 			activityPayload.CursorPositions = append(activityPayload.CursorPositions, mousePos)
+		case mouseClick := <-mouseClickChannel:
+			activityPayload.MouseClicks = append(activityPayload.MouseClicks, mouseClick)
 		case <-ticker.C:
 			lib.SaveDataInDb(activityPayload)
 			println("Freeing up payload memory")

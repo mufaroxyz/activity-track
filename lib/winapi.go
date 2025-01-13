@@ -10,9 +10,9 @@ var (
 	procGetCursorPos      = WinApi.NewProc("GetCursorPos")
 	procSetWindowsHookExW = WinApi.NewProc("SetWindowsHookExW")
 	procUnhookWindowsHook = WinApi.NewProc("UnhookWindowsHook")
-	procLowLevelMouseProc = WinApi.NewProc("LowLevelMouseProc")
 	procCallNextHookEx    = WinApi.NewProc("CallNextHookEx")
 	procGetMessageW       = WinApi.NewProc("GetMessageW")
+	HookHandle            HHOOK
 )
 
 func GetProcAddress(name string) uintptr {
@@ -32,14 +32,6 @@ func SetWindowsHookExW(idHook int, lpfn HOOKPROC, hMod HINSTANCE, dwThreadId DWO
 func UnhookWindowsHook(hhk HHOOK) bool {
 	ret, _, _ := procUnhookWindowsHook.Call(uintptr(hhk))
 	return ret != 0
-}
-
-func LowLevelMouseProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
-	ret, _, _ := procLowLevelMouseProc.Call(
-		uintptr(nCode),
-		uintptr(wParam),
-		uintptr(lParam))
-	return LRESULT(ret)
 }
 
 func CallNextHookEx(hhk HHOOK, nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
