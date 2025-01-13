@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	mouseClickChannel chan<- MSLLHOOKSTRUCTExtended
+	innerMouseEventChannel chan<- MSLLHOOKSTRUCTExtended
 )
 
 func MousePosTrack(ch chan<- CursorPosData) {
@@ -36,7 +36,7 @@ func LowLevelMouseProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
 			mouseStruct.ButtonType = WM_RBUTTONDOWN
 		}
 
-		mouseClickChannel <- *mouseStruct
+		innerMouseEventChannel <- *mouseStruct
 	}
 
 	return CallNextHookEx(0, nCode, wParam, lParam)
@@ -44,7 +44,7 @@ func LowLevelMouseProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
 
 func MouseClickTrack(ch chan<- MSLLHOOKSTRUCTExtended) {
 	println("Hooking mouse events")
-	mouseClickChannel = ch
+	innerMouseEventChannel = ch
 	hook := SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc, 0, 0)
 	if hook == 0 {
 		panic("Failed to set hook")
