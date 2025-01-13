@@ -9,6 +9,7 @@ type (
 	LRESULT   uintptr
 	DWORD     uint32
 	UINT      uint32
+	ULONG_PTR uintptr
 	MSG       struct {
 		HWND    HWND
 		Message UINT
@@ -24,6 +25,9 @@ type POINT struct {
 }
 
 const (
+	WH_KEYBOARD_LL = 13
+	WM_KEYDOWN     = 0x0100
+	WM_SYSKEYDOWN  = 0x0104
 	WH_MOUSE_LL    = 14
 	WM_LBUTTONDOWN = 0x0201
 	WM_RBUTTONDOWN = 0x0204
@@ -42,6 +46,14 @@ type MSLLHOOKSTRUCTExtended struct {
 	ButtonType int
 }
 
+type KBDLLHOOKSTRUCT struct {
+	VkCode      DWORD
+	ScanCode    DWORD
+	Flags       DWORD
+	Time        DWORD
+	DwExtraInfo ULONG_PTR
+}
+
 type HHOOK uintptr
 
 type CursorPosData struct {
@@ -51,9 +63,17 @@ type CursorPosData struct {
 
 type ActivityPayload struct {
 	CursorPositions []CursorPosData
-	MouseClicks     []MSLLHOOKSTRUCT
+	MouseClicks     []MSLLHOOKSTRUCTExtended
+	KeyboardPresses []KBDLLHOOKSTRUCT
+}
+
+type MouseActivity struct {
+	TotalMouseDistance float64
+	RightClicks        int
+	LeftClicks         int
 }
 
 type ActivityPayloadFinal struct {
-	TotalMouseDistance float64
+	MouseActivity   MouseActivity
+	KeyboardPresses int
 }

@@ -13,10 +13,13 @@ func main() {
 	var activityPayload = lib.ActivityPayload{}
 
 	var lastMousePos = lib.POINT{}
+	var lastKeyboardEvent = lib.KBDLLHOOKSTRUCT{}
 	mousePosChannel := make(chan lib.CursorPosData)
-	mouseClickChannel := make(chan lib.MSLLHOOKSTRUCT, 5)
+	mouseClickChannel := make(chan lib.MSLLHOOKSTRUCTExtended, 10)
+	keyboardEventChannel := make(chan lib.KBDLLHOOKSTRUCT, 10)
 	go lib.MousePosTrack(mousePosChannel)
 	go lib.MouseClickTrack(mouseClickChannel)
+	go lib.KeyboardEventTrack(keyboardEventChannel)
 
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -37,6 +40,12 @@ func main() {
 			activityPayload.CursorPositions = append(activityPayload.CursorPositions, mousePos)
 		case mouseClick := <-mouseClickChannel:
 			activityPayload.MouseClicks = append(activityPayload.MouseClicks, mouseClick)
+		case keyboardEvent := <-keyboardEventChannel:
+			if keyboardEvent.VkCode == lastKeyboardEvent.VkCode {
+				continue
+			}
+
+			lastKeyboardEvent = keyboardEvent
 		case <-ticker.C:
 			lib.SaveDataInDb(activityPayload)
 			println("Freeing up payload memory")
