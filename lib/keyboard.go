@@ -24,10 +24,11 @@ func LowLevelKeyboardProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
 func KeyboardEventTrack(ch chan<- KBDLLHOOKSTRUCT) {
 	println("Hooking keyboard events")
 	innerKeyboardChannel = ch
-	hook := SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0)
+	hook, _ := SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, 0, 0)
 	if hook == 0 {
 		panic("Failed to set hook WH_KEYBOARD_LL")
 	}
+	defer UnhookWindowsHook(hook)
 
 	var msg MSG
 	for {

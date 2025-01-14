@@ -45,7 +45,7 @@ func LowLevelMouseProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
 func MouseClickTrack(ch chan<- MSLLHOOKSTRUCTExtended) {
 	println("Hooking mouse events")
 	innerMouseEventChannel = ch
-	hook := SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc, 0, 0)
+	hook, _ := SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc, 0, 0)
 	if hook == 0 {
 		panic("Failed to set hook")
 	}

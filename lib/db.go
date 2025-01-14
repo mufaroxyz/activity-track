@@ -1,6 +1,8 @@
 package lib
 
-import "time"
+import (
+	"time"
+)
 
 func SaveDataInDb(payload ActivityPayload) {
 	// TODO: implement the logic to process data to more optimized format & save it in db

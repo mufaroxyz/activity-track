@@ -6,13 +6,19 @@ import (
 )
 
 var (
-	WinApi                = syscall.NewLazyDLL("user32.dll")
-	procGetCursorPos      = WinApi.NewProc("GetCursorPos")
-	procSetWindowsHookExW = WinApi.NewProc("SetWindowsHookExW")
-	procUnhookWindowsHook = WinApi.NewProc("UnhookWindowsHook")
-	procCallNextHookEx    = WinApi.NewProc("CallNextHookEx")
-	procGetMessageW       = WinApi.NewProc("GetMessageW")
-	HookHandle            HHOOK
+	WinApi                 = syscall.NewLazyDLL("user32.dll")
+	kernel32               = syscall.NewLazyDLL("kernel32.dll")
+	procGetCursorPos       = WinApi.NewProc("GetCursorPos")
+	procSetWindowsHookExW  = WinApi.NewProc("SetWindowsHookExW")
+	procUnhookWindowsHook  = WinApi.NewProc("UnhookWindowsHook")
+	procCallNextHookEx     = WinApi.NewProc("CallNextHookEx")
+	procGetMessageW        = WinApi.NewProc("GetMessageW")
+	procGetModuleHandleExW = kernel32.NewProc("GetModuleHandleExW")
+	procGetModuleHandleW   = kernel32.NewProc("GetModuleHandleW")
+	procSetWinEventHook    = WinApi.NewProc("SetWinEventHook")
+	procUnhookWinEvent     = WinApi.NewProc("UnhookWinEvent")
+	procGetWindowTextW     = WinApi.NewProc("GetWindowTextW")
+	HookHandle             HHOOK
 )
 
 func GetProcAddress(name string) uintptr {
@@ -20,13 +26,14 @@ func GetProcAddress(name string) uintptr {
 	return proc.Addr()
 }
 
-func SetWindowsHookExW(idHook int, lpfn HOOKPROC, hMod HINSTANCE, dwThreadId DWORD) HHOOK {
-	ret, _, _ := procSetWindowsHookExW.Call(
+func SetWindowsHookExW(idHook int, lpfn HOOKPROC, hMod HINSTANCE, dwThreadId DWORD) (HHOOK, error) {
+	ret, _, err := procSetWindowsHookExW.Call(
 		uintptr(idHook),
 		uintptr(syscall.NewCallback(lpfn)),
 		uintptr(hMod),
 		uintptr(dwThreadId))
-	return HHOOK(ret)
+
+	return HHOOK(ret), err
 }
 
 func UnhookWindowsHook(hhk HHOOK) bool {
@@ -50,6 +57,44 @@ func GetMessageW(lpMsg *MSG, hWnd HWND, wMsgFilterMin, wMsgFilterMax UINT) bool 
 		uintptr(wMsgFilterMin),
 		uintptr(wMsgFilterMax))
 	return ret != 0
+}
+
+func GetModuleHandleExW(dwFlags DWORD, lpModuleName LPCWSTR, phModule *HMODULE) (bool, error) {
+	ret, _, err := procGetModuleHandleExW.Call(
+		uintptr(dwFlags),
+		uintptr(unsafe.Pointer(lpModuleName)),
+		uintptr(unsafe.Pointer(phModule)))
+	return ret != 0, err
+}
+
+func GetModuleHandleW(lpModuleName LPCWSTR) HMODULE {
+	ret, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(lpModuleName)))
+	return HMODULE(ret)
+}
+
+func SetWinEventHook(eventMin, eventMax DWORD, hmodWinEventProc HMODULE, pfnWinEventProc WINEVENTPROC, idProcess DWORD, idThread DWORD, dwFlags DWORD) HWINEVENTHOOK {
+	ret, _, _ := procSetWinEventHook.Call(
+		uintptr(eventMin),
+		uintptr(eventMax),
+		uintptr(hmodWinEventProc),
+		syscall.NewCallback(pfnWinEventProc),
+		uintptr(idProcess),
+		uintptr(idThread),
+		uintptr(dwFlags))
+	return HWINEVENTHOOK(ret)
+}
+
+func UnhookWinEvent(hWinEventHook HWINEVENTHOOK) bool {
+	ret, _, _ := procUnhookWinEvent.Call(uintptr(hWinEventHook))
+	return ret != 0
+}
+
+func GetWindowTextW(hWnd HWND, lpString LPWSTR, nMaxCount int32) int32 {
+	ret, _, _ := procGetWindowTextW.Call(
+		uintptr(hWnd),
+		uintptr(unsafe.Pointer(lpString)),
+		uintptr(nMaxCount))
+	return int32(ret)
 }
 
 func GetCursorPos(lpPoint *POINT) bool {

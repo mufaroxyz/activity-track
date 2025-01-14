@@ -2,6 +2,8 @@ package main
 
 import (
 	"activity-track/lib"
+	"fmt"
+	"syscall"
 	"time"
 )
 
@@ -17,9 +19,11 @@ func main() {
 	mousePosChannel := make(chan lib.CursorPosData)
 	mouseEventChannel := make(chan lib.MSLLHOOKSTRUCTExtended, 10)
 	keyboardEventChannel := make(chan lib.KBDLLHOOKSTRUCT, 10)
+	activeWindowEventChannel := make(chan lib.ActiveWindowEvent)
 	go lib.MousePosTrack(mousePosChannel)
 	go lib.MouseClickTrack(mouseEventChannel)
 	go lib.KeyboardEventTrack(keyboardEventChannel)
+	go lib.TrackWindowReplaced(activeWindowEventChannel)
 
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -30,8 +34,6 @@ func main() {
 			if !lib.IsMouseMoved(lib.CursorPosData{POINT: lastMousePos}, mousePos) {
 				continue
 			}
-
-			println(mousePos.X, mousePos.Y, mousePos.TimeStamp)
 
 			if len(activityPayload.CursorPositions) > 0 {
 				lastMousePos = activityPayload.CursorPositions[len(activityPayload.CursorPositions)-1].POINT
@@ -46,9 +48,15 @@ func main() {
 			}
 
 			lastKeyboardEvent = keyboardEvent
+		case activeWindowEvent := <-activeWindowEventChannel:
+			buffer := make([]uint16, 256)
+			lib.GetWindowTextW(activeWindowEvent.WindowHandle, &buffer[0], 256)
+			windowTitle := syscall.UTF16ToString(buffer)
+
+			println(fmt.Sprintf("<-activeWindowEventChannel ts: %v, handle: %v, title: %s", activeWindowEvent.TimeStamp, activeWindowEvent.WindowHandle, windowTitle))
 		case <-ticker.C:
 			lib.SaveDataInDb(activityPayload)
-			println("Freeing up payload memory")
+			// println("Freeing up payload memory")
 			activityPayload = lib.ActivityPayload{}
 		}
 	}
