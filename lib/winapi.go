@@ -1,28 +1,31 @@
 package lib
 
 import (
+	"path/filepath"
 	"syscall"
 	"unsafe"
 )
 
 var (
-	WinApi                 = syscall.NewLazyDLL("user32.dll")
-	kernel32               = syscall.NewLazyDLL("kernel32.dll")
-	procGetCursorPos       = WinApi.NewProc("GetCursorPos")
-	procSetWindowsHookExW  = WinApi.NewProc("SetWindowsHookExW")
-	procUnhookWindowsHook  = WinApi.NewProc("UnhookWindowsHook")
-	procCallNextHookEx     = WinApi.NewProc("CallNextHookEx")
-	procGetMessageW        = WinApi.NewProc("GetMessageW")
-	procGetModuleHandleExW = kernel32.NewProc("GetModuleHandleExW")
-	procGetModuleHandleW   = kernel32.NewProc("GetModuleHandleW")
-	procSetWinEventHook    = WinApi.NewProc("SetWinEventHook")
-	procUnhookWinEvent     = WinApi.NewProc("UnhookWinEvent")
-	procGetWindowTextW     = WinApi.NewProc("GetWindowTextW")
-	HookHandle             HHOOK
+	User32                         = syscall.NewLazyDLL("user32.dll")
+	kernel32                       = syscall.NewLazyDLL("kernel32.dll")
+	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
+	procGetWindowThreadProcessId   = User32.NewProc("GetWindowThreadProcessId")
+	procGetCursorPos               = User32.NewProc("GetCursorPos")
+	procSetWindowsHookExW          = User32.NewProc("SetWindowsHookExW")
+	procUnhookWindowsHook          = User32.NewProc("UnhookWindowsHook")
+	procCallNextHookEx             = User32.NewProc("CallNextHookEx")
+	procGetMessageW                = User32.NewProc("GetMessageW")
+	procSetWinEventHook            = User32.NewProc("SetWinEventHook")
+	procUnhookWinEvent             = User32.NewProc("UnhookWinEvent")
+	procGetWindowTextW             = User32.NewProc("GetWindowTextW")
+	procGetWindowInfo              = User32.NewProc("GetWindowInfo")
+	procGetWindowModuleFileNameW   = User32.NewProc("GetWindowModuleFileNameW")
+	HookHandle                     HHOOK
 )
 
 func GetProcAddress(name string) uintptr {
-	proc := WinApi.NewProc(name)
+	proc := User32.NewProc(name)
 	return proc.Addr()
 }
 
@@ -59,19 +62,6 @@ func GetMessageW(lpMsg *MSG, hWnd HWND, wMsgFilterMin, wMsgFilterMax UINT) bool 
 	return ret != 0
 }
 
-func GetModuleHandleExW(dwFlags DWORD, lpModuleName LPCWSTR, phModule *HMODULE) (bool, error) {
-	ret, _, err := procGetModuleHandleExW.Call(
-		uintptr(dwFlags),
-		uintptr(unsafe.Pointer(lpModuleName)),
-		uintptr(unsafe.Pointer(phModule)))
-	return ret != 0, err
-}
-
-func GetModuleHandleW(lpModuleName LPCWSTR) HMODULE {
-	ret, _, _ := procGetModuleHandleW.Call(uintptr(unsafe.Pointer(lpModuleName)))
-	return HMODULE(ret)
-}
-
 func SetWinEventHook(eventMin, eventMax DWORD, hmodWinEventProc HMODULE, pfnWinEventProc WINEVENTPROC, idProcess DWORD, idThread DWORD, dwFlags DWORD) HWINEVENTHOOK {
 	ret, _, _ := procSetWinEventHook.Call(
 		uintptr(eventMin),
@@ -95,6 +85,56 @@ func GetWindowTextW(hWnd HWND, lpString LPWSTR, nMaxCount int32) int32 {
 		uintptr(unsafe.Pointer(lpString)),
 		uintptr(nMaxCount))
 	return int32(ret)
+}
+
+func GetWindowInfo(hwnd HWND, pwi *WINDOWINFO) bool {
+	ret, _, _ := procGetWindowInfo.Call(
+		uintptr(hwnd),
+		uintptr(unsafe.Pointer(pwi)))
+	return ret != 0
+}
+
+func GetWindowModuleFileNameW(hwnd HWND, lpszFileName LPWSTR, cchFileNameMax UINT) UINT {
+	ret, _, _ := procGetWindowModuleFileNameW.Call(
+		uintptr(hwnd),
+		uintptr(unsafe.Pointer(lpszFileName)),
+		uintptr(cchFileNameMax))
+	return UINT(ret)
+}
+
+func GetWindowThreadProcessId(hwnd syscall.Handle, processId *uint32) uint32 {
+	ret, _, _ := procGetWindowThreadProcessId.Call(
+		uintptr(hwnd),
+		uintptr(unsafe.Pointer(processId)),
+	)
+	return uint32(ret)
+}
+
+func GetProcessExeName(hwnd syscall.Handle) string {
+	var processID uint32
+	GetWindowThreadProcessId(hwnd, &processID)
+
+	hProcess, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processID)
+	if err != nil {
+		return ""
+	}
+	defer syscall.CloseHandle(hProcess)
+
+	var pathLen uint32 = 260
+	var buffer = make([]uint16, pathLen)
+
+	ret, _, _ := syscall.NewLazyDLL("psapi.dll").NewProc("GetProcessImageFileNameW").Call(
+		uintptr(hProcess),
+		uintptr(unsafe.Pointer(&buffer[0])),
+		uintptr(pathLen),
+	)
+
+	if ret == 0 {
+		return ""
+	}
+
+	path := syscall.UTF16ToString(buffer[:])
+	return filepath.Base(path)
 }
 
 func GetCursorPos(lpPoint *POINT) bool {

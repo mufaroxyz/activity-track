@@ -3,12 +3,13 @@ package main
 import (
 	"activity-track/lib"
 	"fmt"
+	"strings"
 	"syscall"
 	"time"
 )
 
 func main() {
-	if lib.WinApi == nil {
+	if lib.User32 == nil {
 		panic("Failed to initialize WinApi")
 	}
 
@@ -53,7 +54,19 @@ func main() {
 			lib.GetWindowTextW(activeWindowEvent.WindowHandle, &buffer[0], 256)
 			windowTitle := syscall.UTF16ToString(buffer)
 
-			println(fmt.Sprintf("<-activeWindowEventChannel ts: %v, handle: %v, title: %s", activeWindowEvent.TimeStamp, activeWindowEvent.WindowHandle, windowTitle))
+			if lib.IsTitleIgnored(windowTitle) {
+				continue
+			}
+
+			processName := lib.GetProcessExeName(syscall.Handle(activeWindowEvent.WindowHandle))
+			association := lib.GetAssociation(strings.ToLower(processName), windowTitle)
+
+			println(fmt.Sprintf("<-activeWindowEventChannel ts: %v, group: %v, process_name: %s", activeWindowEvent.TimeStamp, association, processName))
+
+			activityPayload.WindowActivities = append(activityPayload.WindowActivities, lib.WindowActivity{
+				Activity:  association,
+				TimeStamp: activeWindowEvent.TimeStamp,
+			})
 		case <-ticker.C:
 			lib.SaveDataInDb(activityPayload)
 			// println("Freeing up payload memory")

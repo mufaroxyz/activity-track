@@ -16,6 +16,8 @@ type (
 	UINT          uint32
 	ULONG_PTR     uintptr
 	LPWSTR        *uint16
+	ATOM          uint16
+	WORD          uint16
 	MSG           struct {
 		HWND    HWND
 		Message UINT
@@ -31,19 +33,20 @@ type POINT struct {
 }
 
 const (
-	WH_KEYBOARD_LL                               = 13
-	WM_KEYDOWN                                   = 0x0100
-	WM_SYSKEYDOWN                                = 0x0104
-	WH_MOUSE_LL                                  = 14
-	WM_LBUTTONDOWN                               = 0x0201
-	WM_RBUTTONDOWN                               = 0x0204
-	WH_SHELL                                     = 10
-	HSHELL_WINDOWREPLACED                        = 13
-	GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS       = 0x00000004
-	GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT = 0x00000002
-	EVENT_SYSTEM_FOREGROUND                      = 0x0003
-	WINEVENT_OUTOFCONTEXT                        = 0x0000
+	WH_KEYBOARD_LL                    = 13
+	WM_KEYDOWN                        = 0x0100
+	WM_SYSKEYDOWN                     = 0x0104
+	WH_MOUSE_LL                       = 14
+	WM_LBUTTONDOWN                    = 0x0201
+	WM_RBUTTONDOWN                    = 0x0204
+	EVENT_SYSTEM_FOREGROUND           = 0x0003
+	WINEVENT_OUTOFCONTEXT             = 0x0000
+	PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 )
+
+type RECT struct {
+	Left, Top, Right, Bottom int32
+}
 
 type MSLLHOOKSTRUCT struct {
 	Point     POINT
@@ -66,6 +69,19 @@ type KBDLLHOOKSTRUCT struct {
 	DwExtraInfo ULONG_PTR
 }
 
+type WINDOWINFO struct {
+	CbSize          DWORD
+	RcWindow        RECT
+	RcClient        RECT
+	DwStyle         DWORD
+	DwExStyle       DWORD
+	DwWindowStatus  DWORD
+	CxWindowBorders UINT
+	CyWindowBorders UINT
+	AtomWindowType  ATOM
+	WCreatorVersion WORD
+}
+
 type HHOOK uintptr
 
 type CursorPosData struct {
@@ -78,10 +94,16 @@ type ActiveWindowEvent struct {
 	TimeStamp    int64
 }
 
+type WindowActivity struct {
+	Activity  string
+	TimeStamp int64
+}
+
 type ActivityPayload struct {
-	CursorPositions []CursorPosData
-	MouseClicks     []MSLLHOOKSTRUCTExtended
-	KeyboardPresses []KBDLLHOOKSTRUCT
+	CursorPositions  []CursorPosData
+	MouseClicks      []MSLLHOOKSTRUCTExtended
+	KeyboardPresses  []KBDLLHOOKSTRUCT
+	WindowActivities []WindowActivity
 }
 
 type MouseActivity struct {
@@ -91,7 +113,8 @@ type MouseActivity struct {
 }
 
 type ActivityPayloadFinal struct {
-	MouseActivity   MouseActivity
-	KeyboardPresses int
-	SnapshotTime    int64
+	MouseActivity    MouseActivity
+	KeyboardPresses  int
+	WindowActivities []WindowActivity
+	SnapshotTime     int64
 }
