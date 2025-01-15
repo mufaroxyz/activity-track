@@ -36,7 +36,9 @@ func LowLevelMouseProc(nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
 			mouseStruct.ButtonType = WM_RBUTTONDOWN
 		}
 
-		innerMouseEventChannel <- *mouseStruct
+		if wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN {
+			innerMouseEventChannel <- *mouseStruct
+		}
 	}
 
 	return CallNextHookEx(0, nCode, wParam, lParam)
