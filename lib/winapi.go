@@ -7,21 +7,19 @@ import (
 )
 
 var (
-	User32                         = syscall.NewLazyDLL("user32.dll")
-	kernel32                       = syscall.NewLazyDLL("kernel32.dll")
-	procQueryFullProcessImageNameW = kernel32.NewProc("QueryFullProcessImageNameW")
-	procGetWindowThreadProcessId   = User32.NewProc("GetWindowThreadProcessId")
-	procGetCursorPos               = User32.NewProc("GetCursorPos")
-	procSetWindowsHookExW          = User32.NewProc("SetWindowsHookExW")
-	procUnhookWindowsHook          = User32.NewProc("UnhookWindowsHook")
-	procCallNextHookEx             = User32.NewProc("CallNextHookEx")
-	procGetMessageW                = User32.NewProc("GetMessageW")
-	procSetWinEventHook            = User32.NewProc("SetWinEventHook")
-	procUnhookWinEvent             = User32.NewProc("UnhookWinEvent")
-	procGetWindowTextW             = User32.NewProc("GetWindowTextW")
-	procGetWindowInfo              = User32.NewProc("GetWindowInfo")
-	procGetWindowModuleFileNameW   = User32.NewProc("GetWindowModuleFileNameW")
-	HookHandle                     HHOOK
+	User32                       = syscall.NewLazyDLL("user32.dll")
+	procGetWindowThreadProcessId = User32.NewProc("GetWindowThreadProcessId")
+	procGetCursorPos             = User32.NewProc("GetCursorPos")
+	procSetWindowsHookExW        = User32.NewProc("SetWindowsHookExW")
+	procUnhookWindowsHook        = User32.NewProc("UnhookWindowsHook")
+	procCallNextHookEx           = User32.NewProc("CallNextHookEx")
+	procGetMessageW              = User32.NewProc("GetMessageW")
+	procSetWinEventHook          = User32.NewProc("SetWinEventHook")
+	procUnhookWinEvent           = User32.NewProc("UnhookWinEvent")
+	procGetWindowTextW           = User32.NewProc("GetWindowTextW")
+	procGetWindowInfo            = User32.NewProc("GetWindowInfo")
+	procGetWindowModuleFileNameW = User32.NewProc("GetWindowModuleFileNameW")
+	HookHandle                   HHOOK
 )
 
 func GetProcAddress(name string) uintptr {

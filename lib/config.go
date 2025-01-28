@@ -8,9 +8,38 @@ import (
 	"path/filepath"
 )
 
-const DEBUG = 0
-
 var config map[string]string
+
+func createConfigFile() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic("Error getting user home directory")
+	}
+
+	configFilePath := filepath.Join(homeDir, ".config", "activity-track.json")
+	file, err := os.Create(configFilePath)
+	if err != nil {
+		panic("Error creating config file")
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
+
+	_, err = file.WriteString(`{
+	"CF_API_KEY": "Your cloudflare API key (with D1 edit permission)",
+	"CF_ACCOUNT_ID": "Your cloudflare account id",
+	"D1_ID": "Your D1 database id"
+}`)
+	if err != nil {
+		panic("Error writing to config file")
+	}
+
+	println("Config file created at: " + configFilePath)
+	os.Exit(0)
+}
 
 func InitConfig() {
 	homeDir, err := os.UserHomeDir()
@@ -21,7 +50,7 @@ func InitConfig() {
 	configFilePath := filepath.Join(homeDir, ".config", "activity-track.json")
 	file, err := os.Open(configFilePath)
 	if err != nil {
-		panic("Error opening config file: missing file")
+		createConfigFile()
 	}
 	defer func(file *os.File) {
 		err := file.Close()

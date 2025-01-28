@@ -13,10 +13,7 @@ func main() {
 		panic("Failed to initialize WinApi")
 	}
 
-	if lib.DEBUG == 0 {
-		lib.InitConfig()
-	}
-
+	lib.InitConfig()
 	lib.SetupCloudflareClient()
 
 	var activityPayload = lib.ActivityPayload{}

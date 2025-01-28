@@ -3,6 +3,7 @@ package lib
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudflare/cloudflare-go"
 )
 
@@ -51,11 +52,11 @@ func SetupCloudflareClient() {
 
 	queryResults, err := Query(`
 		CREATE TABLE IF NOT EXISTS activity (
-		    			id STRING PRIMARY KEY,
-		    			snapshot_time TIMESTAMP,
-		    			mouse_activity OBJECT,
-		    			keyboard_presses INTEGER,
-		                window_activity OBJECT
+		    			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		    			snapshot_time TIMESTAMP NOT NULL,
+		    			mouse_activity OBJECT NOT NULL,
+		    			keyboard_presses INTEGER NOT NULL,
+		                window_activity OBJECT NOT NULL
 				)
 	`)
 

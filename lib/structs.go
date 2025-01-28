@@ -100,8 +100,8 @@ type WindowActivity struct {
 }
 
 type WindowActivityFinal struct {
-	Activity string
-	Time     int64
+	Activity string `json:"activity"`
+	Time     int64  `json:"time"`
 }
 
 type ActivityPayload struct {
@@ -112,9 +112,9 @@ type ActivityPayload struct {
 }
 
 type MouseActivity struct {
-	TotalMouseDistance float64
-	RightClicks        int
-	LeftClicks         int
+	TotalMouseDistance float64 `json:"totalMouseDistance"`
+	RightClicks        int     `json:"rightClicks"`
+	LeftClicks         int     `json:"leftClicks"`
 }
 
 type ActivityPayloadFinal struct {

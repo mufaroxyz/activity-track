@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -63,12 +64,13 @@ func SaveDataInDb(payload ActivityPayload) {
 
 	finalData.WindowActivities = mergedWindowActivities
 
-	println(fmt.Sprintf("Saving data: %+v \n", finalData))
+	mouseActivityJson, _ := json.Marshal(finalData.MouseActivity)
+	windowActivityJson, _ := json.Marshal(finalData.WindowActivities)
 
 	queryResult, err := Query(fmt.Sprintf(`
-		INSERT INTO activity (id, snapshot_time, mouse_activity, keyboard_presses, window_activity)
-		VALUES ('%s', %d, '%+v', %d, '%+v')
-	`, "1", finalData.SnapshotTime, finalData.MouseActivity, finalData.KeyboardPresses, finalData.WindowActivities))
+		INSERT INTO activity (snapshot_time, mouse_activity, keyboard_presses, window_activity)
+		VALUES (%d, '%+v', %d, '%+v')
+	`, finalData.SnapshotTime, string(mouseActivityJson), finalData.KeyboardPresses, string(windowActivityJson)))
 
 	if err != nil {
 		panic(err)

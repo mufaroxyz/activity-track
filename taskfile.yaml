@@ -4,6 +4,9 @@ tasks:
   install-deps:
     cmd: go mod tidy
 
+  build:
+    cmd: go build -o bin/main.exe main.go
+
   run:
     cmd: go run main.go
 
