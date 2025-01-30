@@ -20,6 +20,7 @@ func main() {
 
 	var lastMousePos = lib.POINT{}
 	var lastKeyboardEvent = lib.KBDLLHOOKSTRUCT{}
+	var lastWindowActivity = lib.WindowActivity{}
 	mousePosChannel := make(chan lib.CursorPosData)
 	mouseEventChannel := make(chan lib.MSLLHOOKSTRUCTExtended, 10)
 	keyboardEventChannel := make(chan lib.KBDLLHOOKSTRUCT, 10)
@@ -29,7 +30,7 @@ func main() {
 	go lib.KeyboardEventTrack(keyboardEventChannel)
 	go lib.TrackWindowReplaced(activeWindowEventChannel)
 
-	ticker := time.NewTicker(20 * time.Second)
+	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
 
 	for {
@@ -74,7 +75,9 @@ func main() {
 		case <-ticker.C:
 			lib.SaveDataInDb(activityPayload)
 			// println("Freeing up payload memory")
+			lastWindowActivity = activityPayload.WindowActivities[len(activityPayload.WindowActivities)-1]
 			activityPayload = lib.ActivityPayload{}
+			activityPayload.WindowActivities = append(activityPayload.WindowActivities, lastWindowActivity)
 		}
 	}
 }
