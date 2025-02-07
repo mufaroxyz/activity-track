@@ -1,6 +1,7 @@
-package lib
+package winapi
 
 import (
+	"activity-track/pkg"
 	"path/filepath"
 	"syscall"
 	"unsafe"
@@ -19,7 +20,7 @@ var (
 	procGetWindowTextW           = User32.NewProc("GetWindowTextW")
 	procGetWindowInfo            = User32.NewProc("GetWindowInfo")
 	procGetWindowModuleFileNameW = User32.NewProc("GetWindowModuleFileNameW")
-	HookHandle                   HHOOK
+	HookHandle                   pkg.HHOOK
 )
 
 func GetProcAddress(name string) uintptr {
@@ -27,31 +28,31 @@ func GetProcAddress(name string) uintptr {
 	return proc.Addr()
 }
 
-func SetWindowsHookExW(idHook int, lpfn HOOKPROC, hMod HINSTANCE, dwThreadId DWORD) (HHOOK, error) {
+func SetWindowsHookExW(idHook int, lpfn pkg.HOOKPROC, hMod pkg.HINSTANCE, dwThreadId pkg.DWORD) (pkg.HHOOK, error) {
 	ret, _, err := procSetWindowsHookExW.Call(
 		uintptr(idHook),
 		uintptr(syscall.NewCallback(lpfn)),
 		uintptr(hMod),
 		uintptr(dwThreadId))
 
-	return HHOOK(ret), err
+	return pkg.HHOOK(ret), err
 }
 
-func UnhookWindowsHook(hhk HHOOK) bool {
+func UnhookWindowsHook(hhk pkg.HHOOK) bool {
 	ret, _, _ := procUnhookWindowsHook.Call(uintptr(hhk))
 	return ret != 0
 }
 
-func CallNextHookEx(hhk HHOOK, nCode int, wParam WPARAM, lParam LPARAM) LRESULT {
+func CallNextHookEx(hhk pkg.HHOOK, nCode int, wParam pkg.WPARAM, lParam pkg.LPARAM) pkg.LRESULT {
 	ret, _, _ := procCallNextHookEx.Call(
 		uintptr(hhk),
 		uintptr(nCode),
 		uintptr(wParam),
 		uintptr(lParam))
-	return LRESULT(ret)
+	return pkg.LRESULT(ret)
 }
 
-func GetMessageW(lpMsg *MSG, hWnd HWND, wMsgFilterMin, wMsgFilterMax UINT) bool {
+func GetMessageW(lpMsg *pkg.MSG, hWnd pkg.HWND, wMsgFilterMin, wMsgFilterMax pkg.UINT) bool {
 	ret, _, _ := procGetMessageW.Call(
 		uintptr(unsafe.Pointer(lpMsg)),
 		uintptr(hWnd),
@@ -60,7 +61,7 @@ func GetMessageW(lpMsg *MSG, hWnd HWND, wMsgFilterMin, wMsgFilterMax UINT) bool 
 	return ret != 0
 }
 
-func SetWinEventHook(eventMin, eventMax DWORD, hmodWinEventProc HMODULE, pfnWinEventProc WINEVENTPROC, idProcess DWORD, idThread DWORD, dwFlags DWORD) HWINEVENTHOOK {
+func SetWinEventHook(eventMin, eventMax pkg.DWORD, hmodWinEventProc pkg.HMODULE, pfnWinEventProc pkg.WINEVENTPROC, idProcess pkg.DWORD, idThread pkg.DWORD, dwFlags pkg.DWORD) pkg.HWINEVENTHOOK {
 	ret, _, _ := procSetWinEventHook.Call(
 		uintptr(eventMin),
 		uintptr(eventMax),
@@ -69,15 +70,15 @@ func SetWinEventHook(eventMin, eventMax DWORD, hmodWinEventProc HMODULE, pfnWinE
 		uintptr(idProcess),
 		uintptr(idThread),
 		uintptr(dwFlags))
-	return HWINEVENTHOOK(ret)
+	return pkg.HWINEVENTHOOK(ret)
 }
 
-func UnhookWinEvent(hWinEventHook HWINEVENTHOOK) bool {
+func UnhookWinEvent(hWinEventHook pkg.HWINEVENTHOOK) bool {
 	ret, _, _ := procUnhookWinEvent.Call(uintptr(hWinEventHook))
 	return ret != 0
 }
 
-func GetWindowTextW(hWnd HWND, lpString LPWSTR, nMaxCount int32) int32 {
+func GetWindowTextW(hWnd pkg.HWND, lpString pkg.LPWSTR, nMaxCount int32) int32 {
 	ret, _, _ := procGetWindowTextW.Call(
 		uintptr(hWnd),
 		uintptr(unsafe.Pointer(lpString)),
@@ -85,19 +86,19 @@ func GetWindowTextW(hWnd HWND, lpString LPWSTR, nMaxCount int32) int32 {
 	return int32(ret)
 }
 
-func GetWindowInfo(hwnd HWND, pwi *WINDOWINFO) bool {
+func GetWindowInfo(hwnd pkg.HWND, pwi *pkg.WINDOWINFO) bool {
 	ret, _, _ := procGetWindowInfo.Call(
 		uintptr(hwnd),
 		uintptr(unsafe.Pointer(pwi)))
 	return ret != 0
 }
 
-func GetWindowModuleFileNameW(hwnd HWND, lpszFileName LPWSTR, cchFileNameMax UINT) UINT {
+func GetWindowModuleFileNameW(hwnd pkg.HWND, lpszFileName pkg.LPWSTR, cchFileNameMax pkg.UINT) pkg.UINT {
 	ret, _, _ := procGetWindowModuleFileNameW.Call(
 		uintptr(hwnd),
 		uintptr(unsafe.Pointer(lpszFileName)),
 		uintptr(cchFileNameMax))
-	return UINT(ret)
+	return pkg.UINT(ret)
 }
 
 func GetWindowThreadProcessId(hwnd syscall.Handle, processId *uint32) uint32 {
@@ -112,7 +113,7 @@ func GetProcessExeName(hwnd syscall.Handle) string {
 	var processID uint32
 	GetWindowThreadProcessId(hwnd, &processID)
 
-	hProcess, err := syscall.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processID)
+	hProcess, err := syscall.OpenProcess(pkg.PROCESS_QUERY_LIMITED_INFORMATION, false, processID)
 	if err != nil {
 		return ""
 	}
@@ -135,7 +136,7 @@ func GetProcessExeName(hwnd syscall.Handle) string {
 	return filepath.Base(path)
 }
 
-func GetCursorPos(lpPoint *POINT) bool {
+func GetCursorPos(lpPoint *pkg.POINT) bool {
 	ret, _, _ := procGetCursorPos.Call(uintptr(unsafe.Pointer(lpPoint)))
 	return ret != 0
 }
