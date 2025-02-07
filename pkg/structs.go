@@ -1,4 +1,4 @@
-package lib
+package pkg
 
 type (
 	HOOKPROC      func(int, WPARAM, LPARAM) LRESULT

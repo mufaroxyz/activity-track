@@ -1,7 +1,12 @@
 package main
 
 import (
-	"activity-track/lib"
+	"activity-track/internal/cloudflare"
+	"activity-track/internal/config"
+	"activity-track/internal/db"
+	"activity-track/internal/hooks"
+	"activity-track/internal/winapi"
+	"activity-track/pkg"
 	"fmt"
 	"strings"
 	"syscall"
@@ -9,26 +14,26 @@ import (
 )
 
 func main() {
-	if lib.User32 == nil {
+	if winapi.User32 == nil {
 		panic("Failed to initialize WinApi")
 	}
 
-	lib.InitConfig()
-	lib.SetupCloudflareClient()
+	config.InitConfig()
+	cloudflare.SetupCloudflareClient()
 
-	var activityPayload = lib.ActivityPayload{}
+	var activityPayload = pkg.ActivityPayload{}
 
-	var lastMousePos = lib.POINT{}
-	var lastKeyboardEvent = lib.KBDLLHOOKSTRUCT{}
-	var lastWindowActivity = lib.WindowActivity{}
-	mousePosChannel := make(chan lib.CursorPosData)
-	mouseEventChannel := make(chan lib.MSLLHOOKSTRUCTExtended, 10)
-	keyboardEventChannel := make(chan lib.KBDLLHOOKSTRUCT, 10)
-	activeWindowEventChannel := make(chan lib.ActiveWindowEvent)
-	go lib.MousePosTrack(mousePosChannel)
-	go lib.MouseClickTrack(mouseEventChannel)
-	go lib.KeyboardEventTrack(keyboardEventChannel)
-	go lib.TrackWindowReplaced(activeWindowEventChannel)
+	var lastMousePos = pkg.POINT{}
+	var lastKeyboardEvent = pkg.KBDLLHOOKSTRUCT{}
+	var lastWindowActivity = pkg.WindowActivity{}
+	mousePosChannel := make(chan pkg.CursorPosData)
+	mouseEventChannel := make(chan pkg.MSLLHOOKSTRUCTExtended, 10)
+	keyboardEventChannel := make(chan pkg.KBDLLHOOKSTRUCT, 10)
+	activeWindowEventChannel := make(chan pkg.ActiveWindowEvent)
+	go hooks.MousePosTrack(mousePosChannel)
+	go hooks.MouseClickTrack(mouseEventChannel)
+	go hooks.KeyboardEventTrack(keyboardEventChannel)
+	go hooks.TrackWindowReplaced(activeWindowEventChannel)
 
 	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
@@ -36,7 +41,7 @@ func main() {
 	for {
 		select {
 		case mousePos := <-mousePosChannel:
-			if !lib.IsMouseMoved(lib.CursorPosData{POINT: lastMousePos}, mousePos) {
+			if !hooks.IsMouseMoved(pkg.CursorPosData{POINT: lastMousePos}, mousePos) {
 				continue
 			}
 
@@ -56,27 +61,27 @@ func main() {
 			activityPayload.KeyboardPresses = append(activityPayload.KeyboardPresses, keyboardEvent)
 		case activeWindowEvent := <-activeWindowEventChannel:
 			buffer := make([]uint16, 256)
-			lib.GetWindowTextW(activeWindowEvent.WindowHandle, &buffer[0], 256)
+			winapi.GetWindowTextW(activeWindowEvent.WindowHandle, &buffer[0], 256)
 			windowTitle := syscall.UTF16ToString(buffer)
 
-			if lib.IsTitleIgnored(windowTitle) {
+			if pkg.IsTitleIgnored(windowTitle) {
 				continue
 			}
 
-			processName := lib.GetProcessExeName(syscall.Handle(activeWindowEvent.WindowHandle))
-			association := lib.GetAssociation(strings.ToLower(processName), windowTitle)
+			processName := winapi.GetProcessExeName(syscall.Handle(activeWindowEvent.WindowHandle))
+			association := pkg.GetAssociation(strings.ToLower(processName), windowTitle)
 
 			println(fmt.Sprintf("<-activeWindowEventChannel ts: %v, group: %v, process_name: %s", activeWindowEvent.TimeStamp, association, processName))
 
-			activityPayload.WindowActivities = append(activityPayload.WindowActivities, lib.WindowActivity{
+			activityPayload.WindowActivities = append(activityPayload.WindowActivities, pkg.WindowActivity{
 				Activity:  association,
 				TimeStamp: activeWindowEvent.TimeStamp,
 			})
 		case <-ticker.C:
-			lib.SaveDataInDb(activityPayload)
+			db.SaveDataInDb(activityPayload)
 			// println("Freeing up payload memory")
 			lastWindowActivity = activityPayload.WindowActivities[len(activityPayload.WindowActivities)-1]
-			activityPayload = lib.ActivityPayload{}
+			activityPayload = pkg.ActivityPayload{}
 			activityPayload.WindowActivities = append(activityPayload.WindowActivities, lastWindowActivity)
 		}
 	}

@@ -1,6 +1,6 @@
 //go:build !debug
 
-package lib
+package config
 
 import (
 	"encoding/json"
@@ -66,7 +66,7 @@ func InitConfig() {
 	}
 }
 
-func getEnv(key string) string {
+func GetEnv(key string) string {
 	value, exists := config[key]
 	if !exists {
 		panic("Key not found in config file: " + key)
