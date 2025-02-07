@@ -1,8 +1,10 @@
-package lib
+package cloudflare
 
 import (
 	"context"
 	"fmt"
+
+	"activity-track/internal/config"
 
 	"github.com/cloudflare/cloudflare-go"
 )
@@ -13,9 +15,9 @@ var (
 
 func Query(query string) ([]cloudflare.D1Result, error) {
 	queryResults, err := client.QueryD1Database(context.TODO(),
-		cloudflare.AccountIdentifier(getEnv("CF_ACCOUNT_ID")),
+		cloudflare.AccountIdentifier(config.GetEnv("CF_ACCOUNT_ID")),
 		cloudflare.QueryD1DatabaseParams{
-			DatabaseID: getEnv("D1_ID"),
+			DatabaseID: config.GetEnv("D1_ID"),
 			SQL:        query,
 		},
 	)
@@ -28,8 +30,8 @@ func Query(query string) ([]cloudflare.D1Result, error) {
 }
 
 func SetupCloudflareClient() {
-	apiKey := getEnv("CF_API_KEY")
-	accountIdentifier := getEnv("CF_ACCOUNT_ID")
+	apiKey := config.GetEnv("CF_API_KEY")
+	accountIdentifier := config.GetEnv("CF_ACCOUNT_ID")
 
 	var err error
 	client, err = cloudflare.NewWithAPIToken(apiKey)
@@ -42,7 +44,7 @@ func SetupCloudflareClient() {
 	database, err := client.GetD1Database(
 		context.Background(),
 		cloudflare.AccountIdentifier(accountIdentifier),
-		getEnv("D1_ID"),
+		config.GetEnv("D1_ID"),
 	)
 	if err != nil {
 		panic(err)

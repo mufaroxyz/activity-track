@@ -1,6 +1,9 @@
-package lib
+package db
 
 import (
+	"activity-track/internal/cloudflare"
+	"activity-track/internal/hooks"
+	"activity-track/pkg"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,15 +19,15 @@ import (
 	15 min interval with 15 min cache on the frontend reading the data
 */
 
-func SaveDataInDb(payload ActivityPayload) {
-	finalData := ActivityPayloadFinal{}
+func SaveDataInDb(payload pkg.ActivityPayload) {
+	finalData := pkg.ActivityPayloadFinal{}
 
 	finalData.SnapshotTime = time.Now().Unix()
 
 	if len(payload.CursorPositions) > 2 {
 		for i := 1; i < len(payload.CursorPositions); i++ {
-			var pixelDist = pixelDistance(payload.CursorPositions[i].X, payload.CursorPositions[i].Y, payload.CursorPositions[i-1].X, payload.CursorPositions[i-1].Y)
-			finalData.MouseActivity.TotalMouseDistance += pixelsToMeters(pixelDist)
+			var pixelDist = hooks.PixelDistance(payload.CursorPositions[i].X, payload.CursorPositions[i].Y, payload.CursorPositions[i-1].X, payload.CursorPositions[i-1].Y)
+			finalData.MouseActivity.TotalMouseDistance += hooks.PixelsToMeters(pixelDist)
 		}
 	}
 
@@ -32,9 +35,9 @@ func SaveDataInDb(payload ActivityPayload) {
 	finalData.MouseActivity.RightClicks = 0
 
 	for _, click := range payload.MouseClicks {
-		if click.ButtonType == WM_LBUTTONDOWN {
+		if click.ButtonType == pkg.WM_LBUTTONDOWN {
 			finalData.MouseActivity.LeftClicks++
-		} else if click.ButtonType == WM_RBUTTONDOWN {
+		} else if click.ButtonType == pkg.WM_RBUTTONDOWN {
 			finalData.MouseActivity.RightClicks++
 		}
 	}
@@ -54,9 +57,9 @@ func SaveDataInDb(payload ActivityPayload) {
 		activityMap[activityType] += duration
 	}
 
-	mergedWindowActivities := []WindowActivityFinal{}
+	mergedWindowActivities := []pkg.WindowActivityFinal{}
 	for activity, duration := range activityMap {
-		mergedWindowActivities = append(mergedWindowActivities, WindowActivityFinal{
+		mergedWindowActivities = append(mergedWindowActivities, pkg.WindowActivityFinal{
 			Activity: activity,
 			Time:     duration,
 		})
@@ -67,7 +70,7 @@ func SaveDataInDb(payload ActivityPayload) {
 	mouseActivityJson, _ := json.Marshal(finalData.MouseActivity)
 	windowActivityJson, _ := json.Marshal(finalData.WindowActivities)
 
-	queryResult, err := Query(fmt.Sprintf(`
+	queryResult, err := cloudflare.Query(fmt.Sprintf(`
 		INSERT INTO activity (snapshot_time, mouse_activity, keyboard_presses, window_activity)
 		VALUES (%d, '%+v', %d, '%+v')
 	`, finalData.SnapshotTime, string(mouseActivityJson), finalData.KeyboardPresses, string(windowActivityJson)))
